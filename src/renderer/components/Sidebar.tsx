@@ -7,6 +7,7 @@ import {
   Palette,
   Mic,
   Users,
+  Square,
 } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { useRecordingStore } from '../stores/recording.store'
@@ -22,66 +23,115 @@ const navItems = [
 
 export default function Sidebar() {
   const state = useRecordingStore((s) => s.state)
+  const isRecording = state === 'recording'
+  const isBusy = state === 'transcribing' || state === 'polishing' || state === 'pasting'
+
+  const handleRecordToggle = async () => {
+    if (isRecording) {
+      await window.api.recording.stop()
+    } else if (!isBusy) {
+      await window.api.recording.start()
+    }
+  }
 
   return (
-    <aside className="w-56 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col">
+    <aside className="w-60 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 flex flex-col">
       {/* Title bar drag area */}
-      <div className="titlebar-drag h-12 flex items-center px-5 pt-1">
-        <div className="titlebar-no-drag flex items-center gap-2">
-          <Mic className={cn(
-            'w-5 h-5',
-            state === 'recording' ? 'text-red-500 animate-pulse-recording' : 'text-indigo-600'
-          )} />
-          <span className="font-semibold text-sm tracking-tight">FlowCopy</span>
+      <div className="titlebar-drag h-14 flex items-center px-5 pt-2">
+        <div className="titlebar-no-drag flex items-center gap-2.5">
+          <div className={cn(
+            'w-7 h-7 rounded-lg flex items-center justify-center',
+            isRecording
+              ? 'bg-red-500 animate-pulse-recording'
+              : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+          )}>
+            <Mic className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="font-bold text-sm tracking-tight">FlowCopy</span>
         </div>
       </div>
 
+      {/* Record Button */}
+      <div className="px-4 py-3">
+        <button
+          onClick={handleRecordToggle}
+          disabled={isBusy}
+          className={cn(
+            'w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold cursor-pointer',
+            isRecording
+              ? 'bg-red-500 hover:bg-red-600 text-white animate-glow-red'
+              : isBusy
+                ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-wait'
+                : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40'
+          )}
+        >
+          {isRecording ? (
+            <>
+              <Square className="w-4 h-4 fill-current" />
+              Stop Recording
+            </>
+          ) : isBusy ? (
+            <>
+              <div className="flex items-end gap-0.5 h-5">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="wave-bar w-1 bg-gray-400 rounded-full" />
+                ))}
+              </div>
+              {state === 'transcribing' ? 'Transcribing...' : state === 'polishing' ? 'Polishing...' : 'Pasting...'}
+            </>
+          ) : (
+            <>
+              <Mic className="w-4 h-4" />
+              Start Recording
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-2 space-y-1">
+      <nav className="flex-1 px-3 py-1 space-y-0.5">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium',
                 isActive
-                  ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 hover:text-gray-800 dark:hover:text-gray-200'
               )
             }
           >
-            <item.icon className="w-4 h-4" />
+            <item.icon className="w-[18px] h-[18px]" />
             {item.label}
           </NavLink>
         ))}
       </nav>
 
-      {/* Recording status */}
-      <div className="px-3 py-3 border-t border-gray-200 dark:border-gray-800">
-        <RecordingBadge state={state} />
+      {/* Status footer */}
+      <div className="px-4 py-4 border-t border-gray-100 dark:border-gray-800">
+        <RecordingStatus state={state} />
       </div>
     </aside>
   )
 }
 
-function RecordingBadge({ state }: { state: string }) {
-  const labels: Record<string, { text: string; color: string }> = {
-    idle: { text: 'Ready', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    recording: { text: 'Recording...', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    transcribing: { text: 'Transcribing...', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    polishing: { text: 'Polishing...', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    pasting: { text: 'Pasting...', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-    error: { text: 'Error', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+function RecordingStatus({ state }: { state: string }) {
+  const configs: Record<string, { text: string; dotColor: string; bgColor: string }> = {
+    idle: { text: 'Ready', dotColor: 'bg-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' },
+    recording: { text: 'Recording', dotColor: 'bg-red-400', bgColor: 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400' },
+    transcribing: { text: 'Transcribing', dotColor: 'bg-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400' },
+    polishing: { text: 'Polishing', dotColor: 'bg-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400' },
+    pasting: { text: 'Pasting', dotColor: 'bg-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400' },
+    error: { text: 'Error', dotColor: 'bg-red-500', bgColor: 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400' },
   }
 
-  const { text, color } = labels[state] || labels.idle
+  const { text, dotColor, bgColor } = configs[state] || configs.idle
 
   return (
-    <div className={cn('px-3 py-1.5 rounded-md text-xs font-medium text-center', color)}>
-      {state === 'recording' && (
-        <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1.5 animate-pulse" />
-      )}
+    <div className={cn('flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium', bgColor)}>
+      <span className={cn('w-2 h-2 rounded-full', dotColor, state === 'recording' && 'animate-pulse')} />
       {text}
     </div>
   )

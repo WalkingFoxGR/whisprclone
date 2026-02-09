@@ -2,19 +2,20 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { createMainWindow, createRecorderWindow } from './windows'
 import { createTray, updateTrayRecordingStatus, destroyTray } from './tray'
 import { registerAllHandlers } from './ipc'
-import { registerHotkey, unregisterAll } from './services/hotkey.service'
+import { registerHotkey, unregisterAll, getRecordingState } from './services/hotkey.service'
 import { getDatabase, closeDatabase } from './db/database'
+import { ensurePermissionsOnStartup } from './permissions'
 import { IPC_CHANNELS } from '../shared/ipc-channels'
 
 let mainWindow: BrowserWindow | null = null
 let recorderWindow: BrowserWindow | null = null
+let isRecordingFromUI = false
 
 function getMainWindow(): BrowserWindow | null {
   return mainWindow
 }
 
-app.whenReady().then(() => {
-  // Set app user model id for Windows
+app.whenReady().then(async () => {
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.flowcopy.app')
   }
@@ -32,6 +33,9 @@ app.whenReady().then(() => {
   // Create system tray
   createTray(mainWindow)
 
+  // Check and request permissions on startup (macOS mic + accessibility)
+  await ensurePermissionsOnStartup(mainWindow)
+
   // Register global hotkey for recording
   registerHotkey(
     mainWindow,
@@ -40,31 +44,45 @@ app.whenReady().then(() => {
     () => updateTrayRecordingStatus(false)
   )
 
-  // Handle audio data from recorder window -> transcription pipeline
-  ipcMain.on(IPC_CHANNELS.RECORDING_AUDIO_DATA, async (_event, audioData: ArrayBuffer) => {
-    // Forward to transcription handler
-    if (mainWindow) {
-      try {
-        const result = await mainWindow.webContents.executeJavaScript('true') // ensure window is alive
-        if (result) {
-          ipcMain.emit(IPC_CHANNELS.TRANSCRIBE_AUDIO, _event, audioData)
-        }
-      } catch {
-        // Window not ready
-      }
+  // IPC: renderer can start/stop recording via the UI record button
+  ipcMain.handle(IPC_CHANNELS.RECORDING_START, () => {
+    if (!isRecordingFromUI && recorderWindow) {
+      isRecordingFromUI = true
+      recorderWindow.webContents.send(IPC_CHANNELS.RECORDING_START)
+      mainWindow?.webContents.send(IPC_CHANNELS.RECORDING_STATUS, { state: 'recording', duration_ms: 0 })
+      updateTrayRecordingStatus(true)
     }
   })
 
-  // Handle complete recording from recorder window
+  ipcMain.handle(IPC_CHANNELS.RECORDING_STOP, () => {
+    if (isRecordingFromUI && recorderWindow) {
+      isRecordingFromUI = false
+      recorderWindow.webContents.send(IPC_CHANNELS.RECORDING_STOP)
+      mainWindow?.webContents.send(IPC_CHANNELS.RECORDING_STATUS, { state: 'transcribing' })
+      updateTrayRecordingStatus(false)
+    }
+  })
+
+  // IPC: re-register hotkey when user changes the shortcut in settings
+  ipcMain.on('hotkey:re-register', () => {
+    registerHotkey(
+      mainWindow,
+      recorderWindow,
+      () => updateTrayRecordingStatus(true),
+      () => updateTrayRecordingStatus(false)
+    )
+  })
+
+  // Handle complete recording from hidden recorder window
   ipcMain.on('recording:complete', async (_event, audioData: ArrayBuffer) => {
+    isRecordingFromUI = false
+
     if (mainWindow) {
       mainWindow.webContents.send(IPC_CHANNELS.RECORDING_STATUS, { state: 'transcribing' })
     }
 
-    // Trigger the transcription pipeline
     try {
-      const { transcribe } = await import('./services/openai.service')
-      const { polish } = await import('./services/openai.service')
+      const { transcribe, polish } = await import('./services/openai.service')
       const { writeAndPaste } = await import('./services/clipboard.service')
       const { getToneForActiveApp } = await import('./services/tone.service')
 
@@ -76,7 +94,7 @@ app.whenReady().then(() => {
         return
       }
 
-      // Get tone
+      // Polishing step
       mainWindow?.webContents.send(IPC_CHANNELS.RECORDING_STATUS, { state: 'polishing' })
       const { tone, customInstructions, appName } = await getToneForActiveApp()
 
@@ -98,7 +116,7 @@ app.whenReady().then(() => {
       const polishedText = await polish(textToPolish, tone, customInstructions)
       const wordCount = polishedText.split(/\s+/).filter(Boolean).length
 
-      // Paste
+      // Auto-paste if enabled
       const { SettingsRepository } = await import('./db/repositories/settings.repo')
       const settings = new SettingsRepository(db)
       const autoPaste = settings.get('auto_paste') !== 'false'
@@ -144,7 +162,6 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-  // On macOS, keep the app running in the tray
   if (process.platform !== 'darwin') {
     app.quit()
   }

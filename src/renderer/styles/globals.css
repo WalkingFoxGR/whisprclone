@@ -1,57 +1,56 @@
 @import "tailwindcss";
 
-/* Custom title bar drag region for macOS */
-.titlebar-drag {
-  -webkit-app-region: drag;
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.titlebar-no-drag {
-  -webkit-app-region: no-drag;
-}
+/* Title bar drag regions (macOS) */
+.titlebar-drag { -webkit-app-region: drag; }
+.titlebar-no-drag { -webkit-app-region: no-drag; }
 
 /* Smooth transitions */
 * {
-  transition-property: color, background-color, border-color;
+  transition-property: color, background-color, border-color, opacity, box-shadow;
   transition-duration: 150ms;
-  transition-timing-function: ease;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
-
-/* Recording pulse animation */
+/* Recording pulse */
 @keyframes pulse-recording {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.05);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
 }
+.animate-pulse-recording { animation: pulse-recording 1.5s ease-in-out infinite; }
 
-.animate-pulse-recording {
-  animation: pulse-recording 1.5s ease-in-out infinite;
+/* Glow effect for record button */
+@keyframes glow-red {
+  0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.6); }
 }
+.animate-glow-red { animation: glow-red 1.5s ease-in-out infinite; }
 
-/* Waveform bars animation */
-@keyframes waveform {
-  0%, 100% { height: 20%; }
-  50% { height: 80%; }
+/* Animated waveform bars */
+@keyframes wave1 { 0%, 100% { height: 12px; } 50% { height: 28px; } }
+@keyframes wave2 { 0%, 100% { height: 20px; } 50% { height: 12px; } }
+@keyframes wave3 { 0%, 100% { height: 16px; } 50% { height: 32px; } }
+@keyframes wave4 { 0%, 100% { height: 24px; } 50% { height: 16px; } }
+@keyframes wave5 { 0%, 100% { height: 14px; } 50% { height: 24px; } }
+.wave-bar:nth-child(1) { animation: wave1 0.8s ease-in-out infinite; }
+.wave-bar:nth-child(2) { animation: wave2 0.9s ease-in-out infinite 0.1s; }
+.wave-bar:nth-child(3) { animation: wave3 0.7s ease-in-out infinite 0.2s; }
+.wave-bar:nth-child(4) { animation: wave4 0.85s ease-in-out infinite 0.15s; }
+.wave-bar:nth-child(5) { animation: wave5 0.95s ease-in-out infinite 0.05s; }
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
