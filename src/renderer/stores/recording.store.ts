@@ -13,7 +13,7 @@ interface RecordingStore {
   reset: () => void
 }
 
-export const useRecordingStore = create<RecordingStore>((set) => ({
+export const useRecordingStore = create<RecordingStore>((set, get) => ({
   state: 'idle',
   duration_ms: 0,
   error: null,
@@ -21,11 +21,14 @@ export const useRecordingStore = create<RecordingStore>((set) => ({
   audioLevel: 0,
 
   updateStatus: (status: RecordingStatus) => {
+    // Preserve lastResult if the new status doesn't include one
+    // (e.g., going from idle→recording shouldn't clear the previous result)
+    const currentResult = get().lastResult
     set({
       state: status.state,
       duration_ms: status.duration_ms ?? 0,
       error: status.error ?? null,
-      lastResult: status.result ?? null,
+      lastResult: status.result ?? currentResult,
     })
   },
 

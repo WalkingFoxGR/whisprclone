@@ -8,10 +8,10 @@ interface UsageStore {
 }
 
 const emptyStats: UsageStats = {
-  today: { words: 0, recordings: 0, time_saved_ms: 0 },
-  week: { words: 0, recordings: 0, time_saved_ms: 0 },
-  month: { words: 0, recordings: 0, time_saved_ms: 0 },
-  all_time: { words: 0, recordings: 0 },
+  today: { words: 0, recordings: 0, time_saved_ms: 0, cost_cents: 0 },
+  week: { words: 0, recordings: 0, time_saved_ms: 0, cost_cents: 0 },
+  month: { words: 0, recordings: 0, time_saved_ms: 0, cost_cents: 0 },
+  all_time: { words: 0, recordings: 0, cost_cents: 0 },
   daily: [],
   top_apps: [],
 }

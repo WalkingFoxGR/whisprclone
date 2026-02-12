@@ -1,19 +1,78 @@
 {
-  "name": "flowcopy",
+  "name": "voxpilot",
   "version": "1.0.0",
-  "description": "Voice-to-text AI desktop app with dashboard",
+  "description": "VoxPilot - AI-powered voice-to-text desktop app",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "postinstall": "electron-builder install-app-deps",
+    "compile:native": "swiftc resources/globe-key-listener.swift -o resources/globe-key-listener -framework Cocoa -framework CoreGraphics",
     "lint": "eslint src/ --ext .ts,.tsx",
     "format": "prettier --write src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pack:mac": "electron-vite build && electron-builder --mac",
-    "pack:win": "electron-vite build && electron-builder --win"
+    "pack:mac": "npm run compile:native && electron-vite build && electron-builder --mac",
+    "pack:win": "electron-vite build && electron-builder --win",
+    "release:mac": "npm run compile:native && electron-vite build && electron-builder --mac --publish always"
+  },
+  "build": {
+    "appId": "com.voxpilot.app",
+    "productName": "VoxPilot",
+    "directories": {
+      "output": "dist"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "WalkingFoxGR",
+      "repo": "whisprclone"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extraResources": [
+        {
+          "from": "resources/globe-key-listener",
+          "to": "globe-key-listener"
+        }
+      ],
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "VoxPilot needs microphone access to record your voice for transcription.",
+        "NSAppleEventsUsageDescription": "VoxPilot needs accessibility access to paste transcribed text into your active application."
+      }
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "keywords": [
     "voice",
@@ -31,6 +90,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "better-sqlite3": "^11.10.0",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.7.3",
     "lucide-react": "^0.563.0",
     "openai": "^4.104.0",
     "react": "^19.2.4",
@@ -38,6 +98,7 @@
     "react-router-dom": "^7.13.0",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.0",
+    "uiohook-napi": "^1.5.4",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

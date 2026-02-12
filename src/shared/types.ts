@@ -15,6 +15,11 @@ export interface AppSettings {
   max_recording_seconds: number
   team_server_url: string
   team_auth_token: string
+  // Groq provider
+  transcription_provider: 'openai' | 'groq'
+  groq_api_key: string
+  // Cost optimization
+  smart_polish_skip: boolean
 }
 
 // Dictionary
@@ -78,6 +83,9 @@ export interface UsageEntry {
   language_detected: string | null
   tone_used: string | null
   snippet_used: string | null
+  estimated_cost_cents: number
+  transcription_model: string | null
+  polish_model: string | null
   created_at: number
   synced_at: number | null
 }
@@ -92,6 +100,9 @@ export interface UsageLogInput {
   language_detected?: string
   tone_used?: string
   snippet_used?: string
+  estimated_cost_cents?: number
+  transcription_model?: string
+  polish_model?: string
 }
 
 export interface DailyUsage {
@@ -101,13 +112,14 @@ export interface DailyUsage {
   total_recording_ms: number
   total_processing_ms: number
   top_app: string | null
+  total_cost_cents: number
 }
 
 export interface UsageStats {
-  today: { words: number; recordings: number; time_saved_ms: number }
-  week: { words: number; recordings: number; time_saved_ms: number }
-  month: { words: number; recordings: number; time_saved_ms: number }
-  all_time: { words: number; recordings: number }
+  today: { words: number; recordings: number; time_saved_ms: number; cost_cents: number }
+  week: { words: number; recordings: number; time_saved_ms: number; cost_cents: number }
+  month: { words: number; recordings: number; time_saved_ms: number; cost_cents: number }
+  all_time: { words: number; recordings: number; cost_cents: number }
   daily: DailyUsage[]
   top_apps: { app: string; count: number }[]
 }

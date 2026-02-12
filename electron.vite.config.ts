@@ -46,7 +46,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/renderer/index.html'),
-          recorder: resolve(__dirname, 'src/renderer/recorder.html')
+          recorder: resolve(__dirname, 'src/renderer/recorder.html'),
+          overlay: resolve(__dirname, 'src/renderer/overlay.html')
         }
       }
     }

@@ -1,5 +1,5 @@
-export const APP_NAME = 'FlowCopy'
-export const APP_ID = 'com.flowcopy.app'
+export const APP_NAME = 'VoxPilot'
+export const APP_ID = 'com.voxpilot.app'
 
 export const DEFAULT_HOTKEY = 'CommandOrControl+Shift+Space'
 
@@ -19,6 +19,9 @@ export const DEFAULT_SETTINGS = {
   max_recording_seconds: 300,
   team_server_url: '',
   team_auth_token: '',
+  transcription_provider: 'openai' as const,
+  groq_api_key: '',
+  smart_polish_skip: true,
 }
 
 export const SUPPORTED_LANGUAGES = [
@@ -62,8 +65,14 @@ export const TONE_OPTIONS = [
 ] as const
 
 export const TRANSCRIPTION_MODELS = [
-  { value: 'gpt-4o-transcribe', label: 'GPT-4o Transcribe (recommended)' },
-  { value: 'whisper-1', label: 'Whisper-1 (legacy)' },
+  { value: 'gpt-4o-transcribe', label: 'GPT-4o Transcribe', provider: 'openai' as const },
+  { value: 'whisper-1', label: 'Whisper-1 (legacy)', provider: 'openai' as const },
+] as const
+
+export const GROQ_TRANSCRIPTION_MODELS = [
+  { value: 'whisper-large-v3-turbo', label: 'Whisper Large v3 Turbo (fastest)', provider: 'groq' as const },
+  { value: 'whisper-large-v3', label: 'Whisper Large v3 (best quality)', provider: 'groq' as const },
+  { value: 'distil-whisper-large-v3-en', label: 'Distil Whisper v3 (English only)', provider: 'groq' as const },
 ] as const
 
 export const POLISH_MODELS = [

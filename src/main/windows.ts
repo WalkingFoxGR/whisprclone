@@ -2,6 +2,11 @@ import { BrowserWindow, shell, app } from 'electron'
 import { join } from 'path'
 
 const isDev = !app.isPackaged
+let isQuitting = false
+
+export function setQuitting(val: boolean): void {
+  isQuitting = val
+}
 
 export function createMainWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -22,6 +27,14 @@ export function createMainWindow(): BrowserWindow {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+  })
+
+  // Close-to-hide: clicking the red X hides the window instead of destroying it
+  mainWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault()
+      mainWindow.hide()
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -58,4 +71,44 @@ export function createRecorderWindow(): BrowserWindow {
   }
 
   return recorderWindow
+}
+
+export function createOverlayWindow(): BrowserWindow {
+  const overlay = new BrowserWindow({
+    width: 220,
+    height: 60,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    hasShadow: false,
+    resizable: false,
+    focusable: false,
+    roundedCorners: false,
+    ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+
+  overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  overlay.setAlwaysOnTop(true, 'screen-saver')
+
+  // Position: bottom-right corner
+  const { screen } = require('electron')
+  const display = screen.getPrimaryDisplay()
+  const { width, height } = display.workAreaSize
+  overlay.setPosition(width - 240, height - 160)
+
+  if (isDev && process.env['ELECTRON_RENDERER_URL']) {
+    overlay.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/overlay.html`)
+  } else {
+    overlay.loadFile(join(__dirname, '../renderer/overlay.html'))
+  }
+
+  return overlay
 }

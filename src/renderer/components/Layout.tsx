@@ -7,7 +7,7 @@ export default function Layout() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="titlebar-drag h-12" />
-        <div className="px-8 pb-8">
+        <div className="px-6 pb-6">
           <Outlet />
         </div>
       </main>

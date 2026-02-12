@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>VoxPilot Overlay</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        background: transparent !important;
+        overflow: hidden;
+        width: 220px;
+        height: 60px;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #bar {
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        -webkit-app-region: drag;
+        cursor: pointer;
+        transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                    height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                    background 0.25s ease,
+                    border-color 0.25s ease;
+        border-radius: 24px;
+        overflow: hidden;
+      }
+
+      /* === IDLE: compact pill === */
+      #bar.idle {
+        width: 40px;
+        height: 28px;
+        background: rgba(20, 20, 20, 0.92);
+        padding: 0 8px;
+        justify-content: center;
+      }
+      #bar.idle:hover {
+        background: rgba(35, 35, 35, 0.95);
+      }
+
+      /* === RECORDING: expanded pill === */
+      #bar.recording {
+        width: 210px;
+        height: 44px;
+        background: rgba(20, 20, 20, 0.94);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        padding: 0 12px;
+        gap: 8px;
+        justify-content: flex-start;
+      }
+
+      /* === PROCESSING === */
+      #bar.transcribing,
+      #bar.polishing,
+      #bar.pasting {
+        width: 155px;
+        height: 40px;
+        background: rgba(20, 20, 20, 0.94);
+        padding: 0 12px;
+        gap: 8px;
+        justify-content: flex-start;
+      }
+
+      /* === ERROR === */
+      #bar.error {
+        width: 40px;
+        height: 28px;
+        background: rgba(40, 12, 12, 0.92);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        padding: 0 8px;
+        justify-content: center;
+      }
+
+      /* Recording dot */
+      .rec-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #ef4444;
+        flex-shrink: 0;
+        animation: recPulse 1.2s ease-in-out infinite;
+      }
+      @keyframes recPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.75); }
+      }
+
+      /* Timer */
+      .timer {
+        font-size: 11px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: #ef4444;
+        flex-shrink: 0;
+        pointer-events: none;
+        letter-spacing: 0.3px;
+      }
+
+      /* Waveform canvas */
+      #waveform {
+        flex: 1;
+        height: 100%;
+        pointer-events: none;
+        min-width: 0;
+      }
+
+      /* Processing dot */
+      .proc-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        animation: procPulse 1.2s ease-in-out infinite;
+      }
+      .transcribing .proc-dot { background: #f59e0b; }
+      .polishing .proc-dot { background: #818cf8; }
+      .pasting .proc-dot { background: #a78bfa; }
+      @keyframes procPulse { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+
+      .dots { display: flex; gap: 3px; align-items: center; pointer-events: none; flex-shrink: 0; }
+      .dots span { width: 3px; height: 3px; background: rgba(255,255,255,0.5); border-radius: 50%; animation: dotBounce 1.4s ease-in-out infinite; }
+      .dots span:nth-child(2) { animation-delay: 0.15s; }
+      .dots span:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes dotBounce { 0%,100%{opacity:0.2; transform:translateY(0);} 50%{opacity:1; transform:translateY(-2px);} }
+
+      .proc-label {
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(255,255,255,0.6);
+        pointer-events: none;
+        white-space: nowrap;
+      }
+
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div id="bar" class="idle">
+      <canvas id="waveform"></canvas>
+      <div class="rec-dot hidden" id="el-dot"></div>
+      <span class="timer hidden" id="el-timer">00:00</span>
+      <div class="proc-dot hidden" id="el-proc-dot"></div>
+      <div class="dots hidden" id="el-dots"><span></span><span></span><span></span></div>
+      <span class="proc-label hidden" id="el-proc-label"></span>
+    </div>
+
+    <script>
+      const bar = document.getElementById('bar')
+      const canvas = document.getElementById('waveform')
+      const ctx = canvas.getContext('2d')
+      const elDot = document.getElementById('el-dot')
+      const elTimer = document.getElementById('el-timer')
+      const elProcDot = document.getElementById('el-proc-dot')
+      const elDots = document.getElementById('el-dots')
+      const elProcLabel = document.getElementById('el-proc-label')
+
+      let currentState = 'idle'
+      let timerSeconds = 0
+      let timerInterval = null
+      let animFrame = null
+
+      // --- Real audio data ---
+      const BAR_COUNT = 32
+      const barHeights = new Float32Array(BAR_COUNT)   // current displayed heights (0..1)
+      const barTargets = new Float32Array(BAR_COUNT)    // targets from real audio
+
+      function lerp(a, b, t) { return a + (b - a) * t }
+
+      function drawWaveform() {
+        const dpr = window.devicePixelRatio || 1
+        const rect = canvas.getBoundingClientRect()
+        if (rect.width === 0 || rect.height === 0) {
+          animFrame = requestAnimationFrame(drawWaveform)
+          return
+        }
+        canvas.width = rect.width * dpr
+        canvas.height = rect.height * dpr
+        ctx.scale(dpr, dpr)
+        ctx.clearRect(0, 0, rect.width, rect.height)
+
+        const w = rect.width
+        const h = rect.height
+        const isRecording = currentState === 'recording'
+        const isError = currentState === 'error'
+        const barW = 2.5
+        const gap = 1.5
+        const totalBarWidth = BAR_COUNT * barW + (BAR_COUNT - 1) * gap
+        const startX = (w - totalBarWidth) / 2
+
+        for (let i = 0; i < BAR_COUNT; i++) {
+          // Smoothly interpolate to target — fast attack, slower decay (voicemail feel)
+          const target = barTargets[i]
+          if (target > barHeights[i]) {
+            // Instant attack — spikes appear immediately
+            barHeights[i] = lerp(barHeights[i], target, 0.7)
+          } else {
+            // Slower decay — bars fall back down smoothly
+            barHeights[i] = lerp(barHeights[i], target, 0.12)
+          }
+
+          const x = startX + i * (barW + gap)
+          const minH = 3
+          const maxH = h * 0.65
+          // Gentle curve: pow(0.8) keeps spikes proportional without maxing out
+          const v = Math.pow(barHeights[i], 0.8)
+          const barH = minH + v * (maxH - minH)
+          const y = (h - barH) / 2
+          const radius = 1.25
+
+          if (isRecording) {
+            // Color intensity matches height — brighter when louder
+            const intensity = 0.25 + barHeights[i] * 0.55
+            ctx.fillStyle = `rgba(239, 68, 68, ${intensity})`
+          } else if (isError) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.25)'
+          } else {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.18)'
+          }
+
+          ctx.beginPath()
+          ctx.roundRect(x, y, barW, barH, radius)
+          ctx.fill()
+        }
+
+        animFrame = requestAnimationFrame(drawWaveform)
+      }
+
+      function startWaveform() {
+        if (animFrame) cancelAnimationFrame(animFrame)
+        drawWaveform()
+      }
+
+      function stopWaveform() {
+        if (animFrame) {
+          cancelAnimationFrame(animFrame)
+          animFrame = null
+        }
+      }
+
+      // --- Receive real audio frequency bins from recorder ---
+      let binsReceived = 0
+      function handleBins(bins) {
+        if (currentState !== 'recording') return
+        if (!Array.isArray(bins) || bins.length === 0) return
+        binsReceived++
+        for (let i = 0; i < BAR_COUNT; i++) {
+          barTargets[i] = bins[i] !== undefined ? bins[i] : 0
+        }
+      }
+
+      // Try dedicated listener first, fall back to generic channel listener
+      if (window.api) {
+        if (window.api.onAudioBins) {
+          window.api.onAudioBins(handleBins)
+        }
+        // Also register via generic 'on' as backup
+        if (window.api.on) {
+          window.api.on('recording:audio-bins', handleBins)
+        }
+        // Also listen for audio level as fallback visualization
+        if (window.api.on) {
+          let levelCount = 0
+          window.api.on('recording:audio-level', (level) => {
+            if (currentState !== 'recording') return
+            levelCount++
+            // If we haven't received any bins after 60 level updates (~3sec), use level as fallback
+            if (binsReceived === 0 && levelCount > 60) {
+              // Generate fake bins from level
+              for (let i = 0; i < BAR_COUNT; i++) {
+                const variation = 0.5 + Math.random() * 0.5
+                barTargets[i] = level * variation
+              }
+            }
+          })
+        }
+      }
+
+      // --- Timer ---
+      function formatTime(s) {
+        const m = Math.floor(s / 60)
+        const sec = s % 60
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+      }
+
+      // --- State ---
+      function hideAll() {
+        canvas.classList.add('hidden')
+        elDot.classList.add('hidden')
+        elTimer.classList.add('hidden')
+        elProcDot.classList.add('hidden')
+        elDots.classList.add('hidden')
+        elProcLabel.classList.add('hidden')
+      }
+
+      function updateState(state) {
+        currentState = state
+        bar.className = state === 'idle' ? 'idle' : state
+        hideAll()
+        stopWaveform()
+
+        if (timerInterval) {
+          clearInterval(timerInterval)
+          timerInterval = null
+        }
+
+        switch (state) {
+          case 'idle':
+            canvas.classList.remove('hidden')
+            barHeights.fill(0)
+            barTargets.fill(0)
+            startWaveform()
+            timerSeconds = 0
+            break
+
+          case 'error':
+            canvas.classList.remove('hidden')
+            barHeights.fill(0)
+            barTargets.fill(0)
+            startWaveform()
+            timerSeconds = 0
+            break
+
+          case 'recording':
+            elDot.classList.remove('hidden')
+            elTimer.classList.remove('hidden')
+            canvas.classList.remove('hidden')
+            barTargets.fill(0)
+            startWaveform()
+            timerSeconds = 0
+            elTimer.textContent = '00:00'
+            timerInterval = setInterval(() => {
+              timerSeconds++
+              elTimer.textContent = formatTime(timerSeconds)
+            }, 1000)
+            break
+
+          case 'transcribing':
+          case 'polishing':
+          case 'pasting':
+            elProcDot.classList.remove('hidden')
+            elDots.classList.remove('hidden')
+            elProcLabel.classList.remove('hidden')
+            const labels = { transcribing: 'Transcribing…', polishing: 'Polishing…', pasting: 'Pasting…' }
+            elProcLabel.textContent = labels[state] || ''
+            break
+        }
+      }
+
+      // --- Click ---
+      bar.addEventListener('mousedown', () => {
+        bar.style.webkitAppRegion = 'no-drag'
+        setTimeout(() => { bar.style.webkitAppRegion = 'drag' }, 300)
+      })
+
+      bar.addEventListener('click', (e) => {
+        e.preventDefault()
+        if (currentState === 'idle') {
+          window.api.recording.start()
+        } else if (currentState === 'recording') {
+          window.api.recording.stop()
+        }
+      })
+
+      // --- Init ---
+      barHeights.fill(0)
+      barTargets.fill(0)
+      startWaveform()
+
+      if (window.api && window.api.onRecordingStatus) {
+        window.api.onRecordingStatus((status) => {
+          updateState(status.state)
+        })
+      }
+    </script>
+  </body>
+</html>

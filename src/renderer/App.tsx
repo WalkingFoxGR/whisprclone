@@ -7,6 +7,7 @@ import Dictionary from './pages/Dictionary'
 import Snippets from './pages/Snippets'
 import ToneProfiles from './pages/ToneProfiles'
 import Team from './pages/Team'
+import History from './pages/History'
 import { useRecordingStore } from './stores/recording.store'
 import { useSettingsStore } from './stores/settings.store'
 
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="dictionary" element={<Dictionary />} />
           <Route path="snippets" element={<Snippets />} />
           <Route path="tone" element={<ToneProfiles />} />
+          <Route path="history" element={<History />} />
           <Route path="team" element={<Team />} />
         </Route>
       </Routes>

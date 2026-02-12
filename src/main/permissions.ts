@@ -29,9 +29,19 @@ export async function requestMicrophonePermission(): Promise<boolean> {
 
 export function requestAccessibilityPermission(): boolean {
   if (process.platform === 'darwin') {
+    // This call with `true` will prompt the macOS accessibility dialog
     const isTrusted = systemPreferences.isTrustedAccessibilityClient(true)
     if (!isTrusted) {
-      shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
+      // Open System Settings to the Accessibility privacy pane
+      // macOS Ventura+ (13+) uses the new System Settings app
+      // macOS Monterey and earlier (12-) uses System Preferences
+      const macOSVersion = Number(require('os').release().split('.')[0])
+      if (macOSVersion >= 22) {
+        // macOS Ventura (13) = Darwin 22, Sonoma (14) = Darwin 23, Sequoia (15) = Darwin 24
+        shell.openExternal('x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility')
+      } else {
+        shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
+      }
     }
     return isTrusted
   }
@@ -50,22 +60,28 @@ export async function ensurePermissionsOnStartup(mainWindow: BrowserWindow): Pro
 
   // If mic was denied, show dialog to fix it
   if (status.microphone === 'denied') {
+    const macOSVersion = Number(require('os').release().split('.')[0])
+    const settingsUrl = macOSVersion >= 22
+      ? 'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Microphone'
+      : 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'
+
     dialog.showMessageBox(mainWindow, {
       type: 'warning',
       title: 'Microphone Access Required',
-      message: 'FlowCopy needs microphone access to record your voice.',
-      detail: 'Grant microphone access in System Settings > Privacy & Security > Microphone, then restart FlowCopy.',
+      message: 'VoxPilot needs microphone access to record your voice.',
+      detail: 'Grant microphone access in System Settings > Privacy & Security > Microphone, then restart VoxPilot.',
       buttons: ['Open System Settings', 'Later'],
       defaultId: 0,
     }).then(({ response }) => {
       if (response === 0) {
-        shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone')
+        shell.openExternal(settingsUrl)
       }
     })
   }
 
   // Check accessibility (needed for auto-paste via keyboard simulation)
   if (!status.accessibility) {
+    // This triggers the macOS prompt asking user to grant accessibility
     systemPreferences.isTrustedAccessibilityClient(true)
   }
 }

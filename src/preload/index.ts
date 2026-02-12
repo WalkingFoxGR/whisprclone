@@ -77,6 +77,42 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.APP_CHECK_PERMISSIONS),
     requestPermission: (type: 'microphone' | 'accessibility'): Promise<boolean> =>
       ipcRenderer.invoke(IPC_CHANNELS.APP_REQUEST_PERMISSION, type),
+    reRegisterHotkey: (): void => ipcRenderer.send('hotkey:re-register'),
+    captureHotkey: (): Promise<{ keycode: number; mods: { ctrl: boolean; alt: boolean; shift: boolean; meta: boolean }; displayName: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HOTKEY_CAPTURE_START),
+    cancelCaptureHotkey: (): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HOTKEY_CAPTURE_STOP),
+  },
+
+  updater: {
+    checkForUpdates: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.UPDATE_CHECK),
+    downloadUpdate: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.UPDATE_DOWNLOAD),
+    installUpdate: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.UPDATE_INSTALL),
+    onUpdateAvailable: (callback: (data: { version: string; releaseDate?: string }) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, data: any) => callback(data)
+      ipcRenderer.on(IPC_CHANNELS.UPDATE_AVAILABLE, listener)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATE_AVAILABLE, listener)
+    },
+    onUpdateNotAvailable: (callback: (data: { version: string }) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, data: any) => callback(data)
+      ipcRenderer.on(IPC_CHANNELS.UPDATE_NOT_AVAILABLE, listener)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATE_NOT_AVAILABLE, listener)
+    },
+    onUpdateProgress: (callback: (data: { percent: number }) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, data: any) => callback(data)
+      ipcRenderer.on(IPC_CHANNELS.UPDATE_PROGRESS, listener)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATE_PROGRESS, listener)
+    },
+    onUpdateDownloaded: (callback: (data: { version: string }) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, data: any) => callback(data)
+      ipcRenderer.on(IPC_CHANNELS.UPDATE_DOWNLOADED, listener)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATE_DOWNLOADED, listener)
+    },
+    onUpdateError: (callback: (data: { message: string }) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, data: any) => callback(data)
+      ipcRenderer.on(IPC_CHANNELS.UPDATE_ERROR, listener)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATE_ERROR, listener)
+    },
   },
 
   // Event listeners
@@ -85,6 +121,14 @@ const api = {
     ipcRenderer.on(channel, listener)
     return () => {
       ipcRenderer.removeListener(channel, listener)
+    }
+  },
+
+  onAudioBins: (callback: (bins: number[]) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, bins: number[]) => callback(bins)
+    ipcRenderer.on(IPC_CHANNELS.RECORDING_AUDIO_BINS, listener)
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.RECORDING_AUDIO_BINS, listener)
     }
   },
 

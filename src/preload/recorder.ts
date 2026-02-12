@@ -21,6 +21,10 @@ const recorderApi = {
   sendAudioLevel: (level: number) => {
     ipcRenderer.send(IPC_CHANNELS.RECORDING_AUDIO_LEVEL, level)
   },
+
+  sendAudioBins: (bins: number[]) => {
+    ipcRenderer.send(IPC_CHANNELS.RECORDING_AUDIO_BINS, bins)
+  },
 }
 
 contextBridge.exposeInMainWorld('recorderApi', recorderApi)

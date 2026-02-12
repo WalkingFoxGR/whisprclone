@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="50%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#c4b5fd;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#818cf8;stop-opacity:0"/>
+    </linearGradient>
+    <filter id="softglow">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="228" fill="url(#bg)"/>
+
+  <!-- Subtle inner glow -->
+  <ellipse cx="512" cy="380" rx="320" ry="260" fill="url(#glow)"/>
+
+  <!-- Sound wave arcs (left side) -->
+  <path d="M340 390 Q300 510 340 630" stroke="rgba(255,255,255,0.2)" stroke-width="28" fill="none" stroke-linecap="round"/>
+  <path d="M280 340 Q220 510 280 680" stroke="rgba(255,255,255,0.12)" stroke-width="28" fill="none" stroke-linecap="round"/>
+  <path d="M220 290 Q140 510 220 730" stroke="rgba(255,255,255,0.06)" stroke-width="28" fill="none" stroke-linecap="round"/>
+
+  <!-- Sound wave arcs (right side) -->
+  <path d="M684 390 Q724 510 684 630" stroke="rgba(255,255,255,0.2)" stroke-width="28" fill="none" stroke-linecap="round"/>
+  <path d="M744 340 Q804 510 744 680" stroke="rgba(255,255,255,0.12)" stroke-width="28" fill="none" stroke-linecap="round"/>
+  <path d="M804 290 Q884 510 804 730" stroke="rgba(255,255,255,0.06)" stroke-width="28" fill="none" stroke-linecap="round"/>
+
+  <!-- Microphone body (pill shape) -->
+  <rect x="432" y="280" width="160" height="280" rx="80" fill="white" filter="url(#softglow)"/>
+
+  <!-- Mic grille lines -->
+  <line x1="462" y1="360" x2="562" y2="360" stroke="rgba(99,102,241,0.3)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="462" y1="390" x2="562" y2="390" stroke="rgba(99,102,241,0.3)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="462" y1="420" x2="562" y2="420" stroke="rgba(99,102,241,0.3)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="462" y1="450" x2="562" y2="450" stroke="rgba(99,102,241,0.3)" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Mic cradle arc -->
+  <path d="M352 480 Q352 640 512 640 Q672 640 672 480" stroke="white" stroke-width="40" fill="none" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Mic stand -->
+  <line x1="512" y1="640" x2="512" y2="730" stroke="white" stroke-width="40" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Mic base -->
+  <line x1="410" y1="730" x2="614" y2="730" stroke="white" stroke-width="40" stroke-linecap="round" opacity="0.9"/>
+</svg>

@@ -1,14 +1,24 @@
 import Database from 'better-sqlite3'
 import { app } from 'electron'
 import { join } from 'path'
-import { readFileSync, readdirSync } from 'fs'
+import { readFileSync, readdirSync, existsSync, renameSync, copyFileSync } from 'fs'
+import { dirname } from 'path'
 
 let db: Database.Database | null = null
 
 export function getDatabase(): Database.Database {
   if (db) return db
 
-  const dbPath = join(app.getPath('userData'), 'flowcopy.db')
+  const userData = app.getPath('userData')
+  const dbPath = join(userData, 'voxpilot.db')
+
+  // Migrate from old FlowCopy database (different app folder)
+  const oldAppFolder = join(dirname(userData), 'flowcopy')
+  const oldDbPath = join(oldAppFolder, 'flowcopy.db')
+  if (!existsSync(dbPath) && existsSync(oldDbPath)) {
+    copyFileSync(oldDbPath, dbPath)
+    console.log('[database] Migrated flowcopy data from old app folder → voxpilot.db')
+  }
   db = new Database(dbPath)
 
   // Enable WAL mode for better concurrent read performance
@@ -149,6 +159,17 @@ function runInlineMigrations(database: Database.Database): void {
         top_app TEXT,
         updated_at INTEGER DEFAULT (unixepoch())
       );
+    `,
+    '004_groq.sql': `
+      INSERT OR IGNORE INTO settings (key, value) VALUES
+        ('transcription_provider', 'openai'),
+        ('groq_api_key', '');
+    `,
+    '005_api_cost.sql': `
+      ALTER TABLE usage_log ADD COLUMN estimated_cost_cents REAL DEFAULT 0;
+      ALTER TABLE usage_log ADD COLUMN transcription_model TEXT;
+      ALTER TABLE usage_log ADD COLUMN polish_model TEXT;
+      ALTER TABLE usage_daily ADD COLUMN total_cost_cents REAL DEFAULT 0;
     `,
   }
 
