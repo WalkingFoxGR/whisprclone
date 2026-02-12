@@ -1,6 +1,6 @@
 {
   "name": "voxpilot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "VoxPilot - AI-powered voice-to-text desktop app",
   "main": "./out/main/index.js",
   "scripts": {
@@ -13,7 +13,8 @@
     "format": "prettier --write src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pack:mac": "npm run compile:native && electron-vite build && electron-builder --mac",
+    "sign:mac": "codesign --force --sign - dist/mac-arm64/VoxPilot.app/Contents/Resources/globe-key-listener && find dist/mac-arm64/VoxPilot.app -name '*.node' -exec codesign --force --sign - {} \\; && codesign --force --sign - --identifier com.voxpilot.app dist/mac-arm64/VoxPilot.app/Contents/MacOS/VoxPilot && codesign --force --sign - --identifier com.voxpilot.app dist/mac-arm64/VoxPilot.app",
+    "pack:mac": "npm run compile:native && electron-vite build && electron-builder --mac && npm run sign:mac",
     "pack:win": "electron-vite build && electron-builder --win",
     "release:mac": "npm run compile:native && electron-vite build && electron-builder --mac --publish always"
   },

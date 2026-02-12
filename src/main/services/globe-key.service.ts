@@ -25,6 +25,8 @@ let isRunning = false
  */
 function findBinary(): string | null {
   const candidates = [
+    // Packaged — process.resourcesPath (most reliable for packaged apps)
+    path.join(process.resourcesPath, 'globe-key-listener'),
     // Dev mode — project root resources/
     path.join(app.getAppPath(), 'resources', 'globe-key-listener'),
     // Dev mode — from out/main/ up to project root
@@ -34,6 +36,9 @@ function findBinary(): string | null {
     // Packaged — Resources folder
     path.join(path.dirname(app.getAppPath()), 'Resources', 'globe-key-listener'),
   ]
+
+  console.log('[globe-key] Searching for binary. app.getAppPath():', app.getAppPath())
+  console.log('[globe-key] process.resourcesPath:', process.resourcesPath)
 
   for (const p of candidates) {
     if (fs.existsSync(p)) {
@@ -64,11 +69,17 @@ export function startGlobeKeyListener(onKeyEvent: GlobeKeyCallback): boolean {
   const binary = findBinary()
   if (!binary) return false
 
-  // Make sure it's executable
+  // Make sure it's executable and remove macOS quarantine flag
   try {
     fs.chmodSync(binary, 0o755)
   } catch {
     // ignore — might already be executable
+  }
+  try {
+    const { execSync } = require('child_process')
+    execSync(`xattr -d com.apple.quarantine "${binary}" 2>/dev/null || true`)
+  } catch {
+    // ignore — quarantine flag might not exist
   }
 
   callback_ = onKeyEvent
@@ -105,6 +116,28 @@ export function startGlobeKeyListener(onKeyEvent: GlobeKeyCallback): boolean {
 
     process_.on('exit', (code) => {
       console.log(`[globe-key] Process exited with code ${code}`)
+      if (code === 1) {
+        console.error('[globe-key] Binary exited with error — likely missing Input Monitoring / Accessibility permission')
+        // Show a dialog to the user
+        const { dialog, shell } = require('electron')
+        const os = require('os')
+        const macOSVersion = Number(os.release().split('.')[0])
+        dialog.showMessageBox({
+          type: 'warning',
+          title: 'Fn/Globe Key Needs Permission',
+          message: 'The Fn/Globe key listener could not start.',
+          detail: 'To use the Fn key for hold-to-record, grant VoxPilot access in:\n\nSystem Settings > Privacy & Security > Input Monitoring\n\nThen restart VoxPilot.',
+          buttons: ['Open System Settings', 'OK'],
+          defaultId: 0,
+        }).then(({ response }) => {
+          if (response === 0) {
+            const url = macOSVersion >= 22
+              ? 'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_ListenEvent'
+              : 'x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent'
+            shell.openExternal(url)
+          }
+        })
+      }
       isRunning = false
       process_ = null
     })
@@ -115,7 +148,7 @@ export function startGlobeKeyListener(onKeyEvent: GlobeKeyCallback): boolean {
       process_ = null
     })
 
-    console.log('[globe-key] Spawned globe key listener')
+    console.log(`[globe-key] Spawned globe key listener (PID: ${process_.pid}) from: ${binary}`)
     return true
   } catch (err) {
     console.error('[globe-key] Failed to spawn:', err)

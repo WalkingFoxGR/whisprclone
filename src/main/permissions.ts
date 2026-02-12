@@ -79,9 +79,26 @@ export async function ensurePermissionsOnStartup(mainWindow: BrowserWindow): Pro
     })
   }
 
-  // Check accessibility (needed for auto-paste via keyboard simulation)
+  // Check accessibility (needed for global hotkey capture + auto-paste)
   if (!status.accessibility) {
     // This triggers the macOS prompt asking user to grant accessibility
-    systemPreferences.isTrustedAccessibilityClient(true)
+    const isTrusted = systemPreferences.isTrustedAccessibilityClient(true)
+    if (!isTrusted) {
+      const macOSVersion = Number(require('os').release().split('.')[0])
+      const { response } = await dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: 'Accessibility Access Required',
+        message: 'VoxPilot needs Accessibility access for global hotkeys and auto-paste.',
+        detail: 'Please enable VoxPilot in System Settings > Privacy & Security > Accessibility, then restart the app.\n\nAlso enable it under Input Monitoring if you want to use the Fn/Globe key.',
+        buttons: ['Open System Settings', 'Later'],
+        defaultId: 0,
+      })
+      if (response === 0) {
+        const settingsUrl = macOSVersion >= 22
+          ? 'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility'
+          : 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'
+        shell.openExternal(settingsUrl)
+      }
+    }
   }
 }
