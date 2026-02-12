@@ -6,7 +6,7 @@ export const DEFAULT_HOTKEY = 'CommandOrControl+Shift+Space'
 export const DEFAULT_SETTINGS = {
   openai_api_key: '',
   openai_model_transcription: 'gpt-4o-transcribe',
-  openai_model_polish: 'gpt-4o',
+  openai_model_polish: 'gpt-5.1',
   hotkey: DEFAULT_HOTKEY,
   recording_mode: 'push_to_talk' as const,
   auto_paste: true,
@@ -76,8 +76,8 @@ export const GROQ_TRANSCRIPTION_MODELS = [
 ] as const
 
 export const POLISH_MODELS = [
-  { value: 'gpt-4o', label: 'GPT-4o (recommended)' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini (faster, cheaper)' },
+  { value: 'gpt-5.1', label: 'GPT-5.1 (recommended)' },
+  { value: 'gpt-5.1-instant', label: 'GPT-5.1 Instant (faster, cheaper)' },
 ] as const
 
 // Average typing speed: 40 WPM. Voice with Flow: ~160 WPM.

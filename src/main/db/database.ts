@@ -90,7 +90,7 @@ function runInlineMigrations(database: Database.Database): void {
       INSERT OR IGNORE INTO settings (key, value) VALUES
         ('openai_api_key', ''),
         ('openai_model_transcription', 'gpt-4o-transcribe'),
-        ('openai_model_polish', 'gpt-4o'),
+        ('openai_model_polish', 'gpt-5.1'),
         ('hotkey', 'CommandOrControl+Shift+Space'),
         ('recording_mode', 'push_to_talk'),
         ('auto_paste', 'true'),

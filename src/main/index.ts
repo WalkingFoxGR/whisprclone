@@ -269,7 +269,7 @@ app.whenReady().then(async () => {
       const transcriptionModel = settings.get('transcription_provider') === 'groq'
         ? (settings.get('openai_model_transcription') || 'whisper-large-v3-turbo')
         : (settings.get('openai_model_transcription') || 'gpt-4o-transcribe')
-      const polishModel = settings.get('openai_model_polish') || 'gpt-4o'
+      const polishModel = settings.get('openai_model_polish') || 'gpt-5.1'
       const costCents = estimateCost({
         transcriptionModel,
         polishModel: polishSkipped ? 'none' : polishModel, // 'none' = 0 cost when skipped

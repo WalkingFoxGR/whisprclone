@@ -132,7 +132,7 @@ export async function polish(
   const db = getDatabase()
   const settings = new SettingsRepository(db)
 
-  const model = settings.get('openai_model_polish') || 'gpt-4o'
+  const model = settings.get('openai_model_polish') || 'gpt-5.1'
 
   const toneInstructions: Record<string, string> = {
     neutral: 'Write in a clean, clear, and neutral tone.',
@@ -232,8 +232,8 @@ const PRICING: Record<string, { per_minute?: number; per_1k_input?: number; per_
   'whisper-large-v3': { per_minute: 0.111 },       // $0.111/hr
   'distil-whisper-large-v3-en': { per_minute: 0.02 },
   // OpenAI Polish (chat) — per 1K tokens
-  'gpt-4o': { per_1k_input: 0.25, per_1k_output: 1.0 },        // $2.50/$10 per 1M tokens
-  'gpt-4o-mini': { per_1k_input: 0.015, per_1k_output: 0.06 }, // $0.15/$0.60 per 1M tokens
+  'gpt-5.1': { per_1k_input: 0.125, per_1k_output: 1.0 },          // $1.25/$10 per 1M tokens
+  'gpt-5.1-instant': { per_1k_input: 0.05, per_1k_output: 0.2 },   // $0.50/$2 per 1M tokens (estimated)
 }
 
 /**
