@@ -69,11 +69,15 @@ export async function transcribe(
   if (dictionaryWords.length > 0) {
     promptParts.push(`Context words and names to recognize: ${dictionaryWords.join(', ')}`)
   }
-  // Only add language hint when user explicitly chose a language (not auto-detect)
   if (effectiveLanguage === 'en') {
     promptParts.push('Transcribe the following audio in English. Do not translate.')
   } else if (effectiveLanguage && effectiveLanguage !== 'auto') {
     promptParts.push(`Transcribe the following audio. Do not translate.`)
+  } else {
+    // Auto-detect mode: bias Whisper to focus on the actual words spoken,
+    // not the speaker's accent. This prevents e.g. a Greek-accented English
+    // speaker from getting Greek transcription when they're speaking English.
+    promptParts.push('Identify the language based on the words and vocabulary spoken, not the accent. Transcribe exactly what is said. Do not translate.')
   }
   const promptContext = promptParts.length > 0 ? promptParts.join('. ') : undefined
 
