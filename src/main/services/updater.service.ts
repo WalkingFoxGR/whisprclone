@@ -264,10 +264,10 @@ export function quitAndInstall(): void {
       execSync(`xattr -rd com.apple.quarantine "${newAppPath}" 2>/dev/null || true`)
     } catch {}
 
-    // Ad-hoc sign the new app so macOS permissions stick
-    try {
-      execSync(`codesign --force --deep --sign - --identifier "com.voxpilot.app" "${newAppPath}" 2>/dev/null || true`)
-    } catch {}
+    // NOTE: Do NOT re-sign the app here. The app is already properly signed
+    // by the afterPack build hook with identifier "com.voxpilot.app".
+    // Re-signing creates a new code hash which invalidates macOS TCC permissions
+    // (Accessibility, Input Monitoring), breaking auto-paste and Fn key.
 
     // Use a shell script that waits for the app to quit, then replaces and relaunches
     const script = `#!/bin/bash
