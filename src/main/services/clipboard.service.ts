@@ -1,4 +1,5 @@
 import { clipboard } from 'electron'
+import { uIOhook, UiohookKey } from 'uiohook-napi'
 
 let savedClipboardText: string | null = null
 
@@ -25,28 +26,30 @@ export function writeAndPaste(text: string): void {
 }
 
 function simulatePaste(): void {
-  // Use AppleScript on macOS for reliable paste simulation
-  // This avoids the need for @nut-tree/nut-js and Accessibility permissions for basic paste
-  if (process.platform === 'darwin') {
-    const { exec } = require('child_process')
-    exec(
-      `osascript -e 'tell application "System Events" to keystroke "v" using command down'`,
-      (err: Error | null) => {
-        if (err) {
-          console.error('Failed to simulate paste:', err)
+  // Use uiohook-napi to simulate the paste keystroke.
+  // This works through the same Input Monitoring permission that the hotkey
+  // listener already uses, so it survives reboots without needing a separate
+  // Accessibility grant for osascript/System Events.
+  try {
+    if (process.platform === 'darwin') {
+      uIOhook.keyTap(UiohookKey.V, [UiohookKey.Meta])
+    } else {
+      uIOhook.keyTap(UiohookKey.V, [UiohookKey.Ctrl])
+    }
+  } catch (err) {
+    console.error('Failed to simulate paste via uiohook, falling back to osascript:', err)
+    // Fallback to osascript if uiohook fails
+    if (process.platform === 'darwin') {
+      const { exec } = require('child_process')
+      exec(
+        `osascript -e 'tell application "System Events" to keystroke "v" using command down'`,
+        (execErr: Error | null) => {
+          if (execErr) {
+            console.error('Fallback paste also failed:', execErr)
+          }
         }
-      }
-    )
-  } else if (process.platform === 'win32') {
-    const { exec } = require('child_process')
-    exec(
-      `powershell -command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('^v')"`,
-      (err: Error | null) => {
-        if (err) {
-          console.error('Failed to simulate paste:', err)
-        }
-      }
-    )
+      )
+    }
   }
 }
 
