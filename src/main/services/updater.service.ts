@@ -241,10 +241,23 @@ export function quitAndInstall(): void {
     }
 
     const newAppPath = path.join(extractDir, extractedApps[0])
-    const currentAppPath = path.dirname(path.dirname(app.getAppPath()))
-    // e.g. /Applications/VoxPilot.app
 
-    console.log(`[updater] Replacing ${currentAppPath} with ${newAppPath}`)
+    // Find the .app bundle root — app.getAppPath() returns something like:
+    //   /Applications/VoxPilot.app/Contents/Resources/app.asar
+    // We need to walk up to find the .app directory
+    let currentAppPath = app.getAppPath()
+    while (currentAppPath && !currentAppPath.endsWith('.app')) {
+      const parent = path.dirname(currentAppPath)
+      if (parent === currentAppPath) break // reached filesystem root
+      currentAppPath = parent
+    }
+
+    if (!currentAppPath.endsWith('.app')) {
+      throw new Error(`Could not determine .app bundle path from: ${app.getAppPath()}`)
+    }
+
+    console.log(`[updater] Current app: ${currentAppPath}`)
+    console.log(`[updater] New app: ${newAppPath}`)
 
     // Remove quarantine from the new app
     try {
@@ -257,24 +270,23 @@ export function quitAndInstall(): void {
     } catch {}
 
     // Use a shell script that waits for the app to quit, then replaces and relaunches
-    const script = `
-      #!/bin/bash
-      # Wait for VoxPilot to quit
-      sleep 2
+    const script = `#!/bin/bash
+# Wait for VoxPilot to quit
+sleep 2
 
-      # Replace the old app with the new one
-      rm -rf "${currentAppPath}"
-      mv "${newAppPath}" "${currentAppPath}"
+# Replace the old app with the new one
+rm -rf "${currentAppPath}"
+mv "${newAppPath}" "${currentAppPath}"
 
-      # Remove quarantine again after move
-      xattr -rd com.apple.quarantine "${currentAppPath}" 2>/dev/null || true
+# Remove quarantine again after move
+xattr -rd com.apple.quarantine "${currentAppPath}" 2>/dev/null || true
 
-      # Relaunch
-      open "${currentAppPath}"
+# Relaunch
+open "${currentAppPath}"
 
-      # Cleanup
-      rm -rf "${tmpDir}"
-    `
+# Cleanup
+rm -rf "${tmpDir}"
+`
 
     const scriptPath = path.join(tmpDir, 'install-update.sh')
     fs.writeFileSync(scriptPath, script, { mode: 0o755 })
