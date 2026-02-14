@@ -69,10 +69,14 @@ export async function transcribe(
   if (dictionaryWords.length > 0) {
     promptParts.push(`Context words and names to recognize: ${dictionaryWords.join(', ')}`)
   }
-  // NOTE: Whisper's `prompt` parameter is for style/vocabulary hints only.
-  // Do NOT put instructions here — Whisper sometimes echoes the prompt text
-  // back as part of the transcription output. Keep it minimal.
-  const promptContext = promptParts.length > 0 ? promptParts.join('. ') : undefined
+  // Whisper's `prompt` works as "previous transcript" conditioning.
+  // Do NOT use instructions — Whisper echoes them into the output.
+  // Instead, provide natural example text in the user's likely languages.
+  // This biases Whisper to recognize words correctly despite accent.
+  if (!effectiveLanguage || effectiveLanguage === 'auto') {
+    promptParts.push('Hello, this is a transcription. Γεια σας, αυτή είναι μια μεταγραφή.')
+  }
+  const promptContext = promptParts.length > 0 ? promptParts.join(' ') : undefined
 
   // For very short recordings (< 1s), the WebM container may be malformed
   if (audioBuffer.length < 1000) {

@@ -103,11 +103,12 @@ export function createOverlayWindow(): BrowserWindow {
   // and IPC to re-enable mouse events only when hovering the actual bar.
   overlay.setIgnoreMouseEvents(true, { forward: true })
 
-  // Position: bottom-right corner
+  // Position: bottom-center of screen
   const { screen } = require('electron')
   const display = screen.getPrimaryDisplay()
   const { width, height } = display.workAreaSize
-  overlay.setPosition(width - 240, height - 160)
+  const overlayWidth = 220
+  overlay.setPosition(Math.round((width - overlayWidth) / 2), height - 80)
 
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {
     overlay.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/overlay.html`)

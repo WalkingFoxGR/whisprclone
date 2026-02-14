@@ -16,12 +16,12 @@
 
       #bar {
         position: absolute;
-        right: 4px;
+        left: 50%;
         top: 50%;
-        transform: translateY(-50%);
+        transform: translate(-50%, -50%);
         display: flex;
         align-items: center;
-        -webkit-app-region: drag;
+        -webkit-app-region: no-drag;
         cursor: pointer;
         transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                     height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
@@ -367,11 +367,6 @@
       })
 
       // --- Click ---
-      bar.addEventListener('mousedown', () => {
-        bar.style.webkitAppRegion = 'no-drag'
-        setTimeout(() => { bar.style.webkitAppRegion = 'drag' }, 300)
-      })
-
       bar.addEventListener('click', (e) => {
         e.preventDefault()
         if (currentState === 'idle') {
