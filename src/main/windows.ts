@@ -98,6 +98,11 @@ export function createOverlayWindow(): BrowserWindow {
   overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   overlay.setAlwaysOnTop(true, 'screen-saver')
 
+  // Make the transparent area click-through so the overlay doesn't block
+  // clicks on elements underneath. The renderer uses CSS pointer-events
+  // and IPC to re-enable mouse events only when hovering the actual bar.
+  overlay.setIgnoreMouseEvents(true, { forward: true })
+
   // Position: bottom-right corner
   const { screen } = require('electron')
   const display = screen.getPrimaryDisplay()

@@ -163,6 +163,18 @@ app.whenReady().then(async () => {
     stopCapture()
   })
 
+  // Overlay click-through: re-enable mouse events when hovering the bar
+  ipcMain.on('overlay:mouse-enter', () => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.setIgnoreMouseEvents(false)
+    }
+  })
+  ipcMain.on('overlay:mouse-leave', () => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.setIgnoreMouseEvents(true, { forward: true })
+    }
+  })
+
   // Forward audio frequency bins from recorder → overlay + main UI for waveform
   ipcMain.on(IPC_CHANNELS.RECORDING_AUDIO_BINS, (_event, bins: number[]) => {
     try {

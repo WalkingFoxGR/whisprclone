@@ -115,6 +115,11 @@ const api = {
     },
   },
 
+  // Send a message to the main process (fire-and-forget)
+  send: (channel: string, ...args: any[]) => {
+    ipcRenderer.send(channel, ...args)
+  },
+
   // Event listeners
   on: (channel: string, callback: (...args: any[]) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, ...args: any[]) => callback(...args)

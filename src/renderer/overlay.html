@@ -351,6 +351,21 @@
         }
       }
 
+      // --- Mouse: enable/disable click-through ---
+      // The overlay window is set to ignore mouse events (click-through).
+      // When the cursor enters the bar, we re-enable mouse events so the
+      // user can click/drag. When it leaves, we go back to click-through.
+      bar.addEventListener('mouseenter', () => {
+        if (window.api && window.api.send) {
+          window.api.send('overlay:mouse-enter')
+        }
+      })
+      bar.addEventListener('mouseleave', () => {
+        if (window.api && window.api.send) {
+          window.api.send('overlay:mouse-leave')
+        }
+      })
+
       // --- Click ---
       bar.addEventListener('mousedown', () => {
         bar.style.webkitAppRegion = 'no-drag'
