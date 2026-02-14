@@ -21,9 +21,8 @@
         transform: translate(-50%, -50%);
         display: flex;
         align-items: center;
-        -webkit-app-region: no-drag;
-        cursor: default;
-        pointer-events: none;
+        -webkit-app-region: drag;
+        cursor: grab;
         transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                     height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                     background 0.25s ease,
@@ -350,7 +349,20 @@
         }
       }
 
-      // Overlay is purely visual — no mouse interaction
+      // --- Mouse: enable/disable click-through for dragging ---
+      // The overlay window ignores mouse events (click-through).
+      // When cursor enters the bar, re-enable so user can drag.
+      // No click handler — dragging only, no recording trigger.
+      bar.addEventListener('mouseenter', () => {
+        if (window.api && window.api.send) {
+          window.api.send('overlay:mouse-enter')
+        }
+      })
+      bar.addEventListener('mouseleave', () => {
+        if (window.api && window.api.send) {
+          window.api.send('overlay:mouse-leave')
+        }
+      })
 
       // --- Init ---
       barHeights.fill(0)
