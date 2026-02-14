@@ -71,10 +71,10 @@ export async function transcribe(
   }
   // Whisper's `prompt` works as "previous transcript" conditioning.
   // Do NOT use instructions — Whisper echoes them into the output.
-  // Instead, provide natural example text in the user's likely languages.
-  // This biases Whisper to recognize words correctly despite accent.
+  // Provide heavily English-biased example text so Whisper defaults to
+  // English even when the speaker has a non-English accent.
   if (!effectiveLanguage || effectiveLanguage === 'auto') {
-    promptParts.push('Hello, this is a transcription. Γεια σας, αυτή είναι μια μεταγραφή.')
+    promptParts.push('Hello, this is a transcription of a conversation in English. The speaker is talking about their work and daily tasks. Please note that the speaker may have an accent but is speaking English.')
   }
   const promptContext = promptParts.length > 0 ? promptParts.join(' ') : undefined
 
