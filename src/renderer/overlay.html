@@ -22,7 +22,8 @@
         display: flex;
         align-items: center;
         -webkit-app-region: no-drag;
-        cursor: pointer;
+        cursor: default;
+        pointer-events: none;
         transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                     height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                     background 0.25s ease,
@@ -39,9 +40,7 @@
         padding: 0 8px;
         justify-content: center;
       }
-      #bar.idle:hover {
-        background: rgba(35, 35, 35, 0.95);
-      }
+      /* No hover — overlay is non-interactive */
 
       /* === RECORDING: expanded pill === */
       #bar.recording {
@@ -351,30 +350,7 @@
         }
       }
 
-      // --- Mouse: enable/disable click-through ---
-      // The overlay window is set to ignore mouse events (click-through).
-      // When the cursor enters the bar, we re-enable mouse events so the
-      // user can click/drag. When it leaves, we go back to click-through.
-      bar.addEventListener('mouseenter', () => {
-        if (window.api && window.api.send) {
-          window.api.send('overlay:mouse-enter')
-        }
-      })
-      bar.addEventListener('mouseleave', () => {
-        if (window.api && window.api.send) {
-          window.api.send('overlay:mouse-leave')
-        }
-      })
-
-      // --- Click ---
-      bar.addEventListener('click', (e) => {
-        e.preventDefault()
-        if (currentState === 'idle') {
-          window.api.recording.start()
-        } else if (currentState === 'recording') {
-          window.api.recording.stop()
-        }
-      })
+      // Overlay is purely visual — no mouse interaction
 
       // --- Init ---
       barHeights.fill(0)
