@@ -76,7 +76,7 @@ export function createRecorderWindow(): BrowserWindow {
 export function createOverlayWindow(): BrowserWindow {
   const overlay = new BrowserWindow({
     width: 220,
-    height: 60,
+    height: 20,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -108,7 +108,7 @@ export function createOverlayWindow(): BrowserWindow {
   const display = screen.getPrimaryDisplay()
   const { width, height } = display.size  // full screen size, not workArea
   const overlayWidth = 220
-  const overlayHeight = 60
+  const overlayHeight = 20
   overlay.setPosition(Math.round((width - overlayWidth) / 2), height - overlayHeight)
 
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {

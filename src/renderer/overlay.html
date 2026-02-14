@@ -9,7 +9,7 @@
         background: transparent !important;
         overflow: hidden;
         width: 220px;
-        height: 60px;
+        height: 20px;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
@@ -31,12 +31,12 @@
         overflow: hidden;
       }
 
-      /* === IDLE: compact pill === */
+      /* === IDLE: tiny pill — no waveform, just a small bar === */
       #bar.idle {
         width: 40px;
-        height: 28px;
-        background: rgba(20, 20, 20, 0.92);
-        padding: 0 8px;
+        height: 10px;
+        background: rgba(20, 20, 20, 0.85);
+        padding: 0;
         justify-content: center;
       }
       /* No hover — overlay is non-interactive */
@@ -67,10 +67,10 @@
       /* === ERROR === */
       #bar.error {
         width: 40px;
-        height: 28px;
-        background: rgba(40, 12, 12, 0.92);
+        height: 10px;
+        background: rgba(40, 12, 12, 0.85);
         border: 1px solid rgba(239, 68, 68, 0.25);
-        padding: 0 8px;
+        padding: 0;
         justify-content: center;
       }
 
@@ -295,6 +295,16 @@
         elProcLabel.classList.add('hidden')
       }
 
+      function resizeOverlay(w, h) {
+        document.body.style.width = w + 'px'
+        document.body.style.height = h + 'px'
+        document.documentElement.style.width = w + 'px'
+        document.documentElement.style.height = h + 'px'
+        if (window.api && window.api.send) {
+          window.api.send('overlay:resize', w, h)
+        }
+      }
+
       function updateState(state) {
         currentState = state
         bar.className = state === 'idle' ? 'idle' : state
@@ -308,22 +318,23 @@
 
         switch (state) {
           case 'idle':
-            canvas.classList.remove('hidden')
+            // No waveform in idle — just a tiny bar
             barHeights.fill(0)
             barTargets.fill(0)
-            startWaveform()
             timerSeconds = 0
+            resizeOverlay(220, 20)
             break
 
           case 'error':
-            canvas.classList.remove('hidden')
+            // No waveform in error — just a tiny red bar
             barHeights.fill(0)
             barTargets.fill(0)
-            startWaveform()
             timerSeconds = 0
+            resizeOverlay(220, 20)
             break
 
           case 'recording':
+            resizeOverlay(220, 60)
             elDot.classList.remove('hidden')
             elTimer.classList.remove('hidden')
             canvas.classList.remove('hidden')
@@ -340,6 +351,7 @@
           case 'transcribing':
           case 'polishing':
           case 'pasting':
+            resizeOverlay(220, 60)
             elProcDot.classList.remove('hidden')
             elDots.classList.remove('hidden')
             elProcLabel.classList.remove('hidden')
@@ -367,7 +379,7 @@
       // --- Init ---
       barHeights.fill(0)
       barTargets.fill(0)
-      startWaveform()
+      // Don't start waveform on init — idle state is just a tiny bar
 
       if (window.api && window.api.onRecordingStatus) {
         window.api.onRecordingStatus((status) => {

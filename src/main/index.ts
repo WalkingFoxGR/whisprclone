@@ -163,6 +163,16 @@ app.whenReady().then(async () => {
     stopCapture()
   })
 
+  // Overlay resize: expand when recording/processing, shrink back when idle
+  ipcMain.on('overlay:resize', (_event, w: number, h: number) => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      const [x] = overlayWindow.getPosition()
+      overlayWindow.setSize(w, h)
+      // Keep centered horizontally at same x
+      overlayWindow.setPosition(x, overlayWindow.getPosition()[1])
+    }
+  })
+
   // Overlay click-through: re-enable mouse events when hovering bar (for dragging)
   ipcMain.on('overlay:mouse-enter', () => {
     if (overlayWindow && !overlayWindow.isDestroyed()) {
