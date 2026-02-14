@@ -163,13 +163,15 @@ app.whenReady().then(async () => {
     stopCapture()
   })
 
-  // Overlay resize: expand when recording/processing, shrink back when idle
+  // Overlay resize: expand upward when recording, shrink back when idle
   ipcMain.on('overlay:resize', (_event, w: number, h: number) => {
     if (overlayWindow && !overlayWindow.isDestroyed()) {
-      const [x] = overlayWindow.getPosition()
+      const [x, y] = overlayWindow.getPosition()
+      const [, oldH] = overlayWindow.getSize()
+      // Expand upward: move y up by the height difference
+      const newY = y - (h - oldH)
       overlayWindow.setSize(w, h)
-      // Keep centered horizontally at same x
-      overlayWindow.setPosition(x, overlayWindow.getPosition()[1])
+      overlayWindow.setPosition(x, newY)
     }
   })
 

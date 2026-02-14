@@ -41,27 +41,26 @@
       }
       /* No hover — overlay is non-interactive */
 
-      /* === RECORDING: expanded pill === */
+      /* === RECORDING: compact waveform-only pill === */
       #bar.recording {
-        width: 210px;
-        height: 44px;
-        background: rgba(20, 20, 20, 0.94);
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        padding: 0 12px;
-        gap: 8px;
-        justify-content: flex-start;
+        width: 80px;
+        height: 20px;
+        background: rgba(20, 20, 20, 0.92);
+        border: 1px solid rgba(239, 68, 68, 0.15);
+        padding: 0 6px;
+        justify-content: center;
       }
 
       /* === PROCESSING === */
       #bar.transcribing,
       #bar.polishing,
       #bar.pasting {
-        width: 155px;
-        height: 40px;
-        background: rgba(20, 20, 20, 0.94);
-        padding: 0 12px;
-        gap: 8px;
-        justify-content: flex-start;
+        width: 100px;
+        height: 20px;
+        background: rgba(20, 20, 20, 0.92);
+        padding: 0 8px;
+        gap: 5px;
+        justify-content: center;
       }
 
       /* === ERROR === */
@@ -109,8 +108,8 @@
 
       /* Processing dot */
       .proc-dot {
-        width: 7px;
-        height: 7px;
+        width: 5px;
+        height: 5px;
         border-radius: 50%;
         flex-shrink: 0;
         animation: procPulse 1.2s ease-in-out infinite;
@@ -127,7 +126,7 @@
       @keyframes dotBounce { 0%,100%{opacity:0.2; transform:translateY(0);} 50%{opacity:1; transform:translateY(-2px);} }
 
       .proc-label {
-        font-size: 11px;
+        font-size: 9px;
         font-weight: 500;
         color: rgba(255,255,255,0.6);
         pointer-events: none;
@@ -163,7 +162,7 @@
       let animFrame = null
 
       // --- Real audio data ---
-      const BAR_COUNT = 32
+      const BAR_COUNT = 20
       const barHeights = new Float32Array(BAR_COUNT)   // current displayed heights (0..1)
       const barTargets = new Float32Array(BAR_COUNT)    // targets from real audio
 
@@ -185,8 +184,8 @@
         const h = rect.height
         const isRecording = currentState === 'recording'
         const isError = currentState === 'error'
-        const barW = 2.5
-        const gap = 1.5
+        const barW = 2
+        const gap = 1
         const totalBarWidth = BAR_COUNT * barW + (BAR_COUNT - 1) * gap
         const startX = (w - totalBarWidth) / 2
 
@@ -334,24 +333,17 @@
             break
 
           case 'recording':
-            resizeOverlay(220, 60)
-            elDot.classList.remove('hidden')
-            elTimer.classList.remove('hidden')
+            resizeOverlay(100, 28)
             canvas.classList.remove('hidden')
             barTargets.fill(0)
             startWaveform()
             timerSeconds = 0
-            elTimer.textContent = '00:00'
-            timerInterval = setInterval(() => {
-              timerSeconds++
-              elTimer.textContent = formatTime(timerSeconds)
-            }, 1000)
             break
 
           case 'transcribing':
           case 'polishing':
           case 'pasting':
-            resizeOverlay(220, 60)
+            resizeOverlay(120, 28)
             elProcDot.classList.remove('hidden')
             elDots.classList.remove('hidden')
             elProcLabel.classList.remove('hidden')
