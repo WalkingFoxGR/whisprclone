@@ -1,6 +1,6 @@
 {
   "name": "voxpilot",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "VoxPilot - AI-powered voice-to-text desktop app",
   "main": "./out/main/index.js",
   "scripts": {
